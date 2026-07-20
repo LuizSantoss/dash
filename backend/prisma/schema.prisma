@@ -7,9 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==========================================
 // AUTENTICAÇÃO E USUÁRIOS
-// ==========================================
 model Usuario {
   id          String       @id @default(uuid())
   nome        String
@@ -19,9 +17,6 @@ model Usuario {
   requisicoes Requisicao[] 
 }
 
-// ==========================================
-// CORAÇÃO DO FLUXO
-// ==========================================
 model Requisicao {
   id           String   @id @default(uuid())
   criadoEm     DateTime @default(now())
@@ -40,9 +35,7 @@ model Requisicao {
   avaliacaoDiretoria AvaliacaoDiretoria?
 }
 
-// ==========================================
 // DETALHAMENTOS DO FORMULÁRIO (1:1)
-// ==========================================
 
 model DadosGerais {
   id                       String     @id @default(uuid())
