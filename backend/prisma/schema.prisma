@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// AUTENTICAÇÃO E USUÁRIOS
+// ==========================================
+model Usuario {
+  id          String       @id @default(uuid())
+  nome        String
+  email       String       @unique
+  senha       String
+  perfil      String       // Ex: GERENTE, RH, DIRETORIA
+  requisicoes Requisicao[] 
+}
+
+// ==========================================
+// CORAÇÃO DO FLUXO
+// ==========================================
+model Requisicao {
+  id           String   @id @default(uuid())
+  criadoEm     DateTime @default(now())
+  status       String   @default("Pendente") 
+  
+  // O Gerente que criou a requisição
+  gerenteId    String
+  gerente      Usuario  @relation(fields: [gerenteId], references: [id])
+
+  // Relações 1:1 com as tabelas de detalhamento
+  dadosGerais        DadosGerais?
+  jornadaTrabalho    JornadaTrabalho?
+  requisitosCargo    RequisitosCargo?
+  ambienteTrabalho   AmbienteTrabalho?
+  dadosRH            DadosRH?
+  avaliacaoDiretoria AvaliacaoDiretoria?
+}
+
+// ==========================================
+// DETALHAMENTOS DO FORMULÁRIO (1:1)
+// ==========================================
+
+model DadosGerais {
+  id                       String     @id @default(uuid())
+  empresa                  String
+  cargoSolicitado          String
+  departamento             String
+  motivoRequisicao         String
+  formaContratacao         String
+  colaboradorSubstituido   String?    // Opcional, dependendo do motivo
+  justificativaAumento     String?    // Opcional, dependendo do motivo
+  
+  requisicaoId             String     @unique
+  requisicao               Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+}
+
+model JornadaTrabalho {
+  id               String     @id @default(uuid())
+  periodo          String
+  horarioTrabalho  String
+  entrada          String
+  saida            String
+
+  requisicaoId     String     @unique
+  requisicao       Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+}
+
+model RequisitosCargo {
+  id                       String     @id @default(uuid())
+  idade                    String
+  idadeAnos                String?
+  sexo                     String
+  caracteristicasPessoais  String?
+  escolaridade             String
+  curso                    String?
+  periodoCurso             String?
+  cursosComplementares     String?
+
+  requisicaoId             String     @unique
+  requisicao               Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+}
+
+model AmbienteTrabalho {
+  id                   String     @id @default(uuid())
+  condicoesAmbientais  String[]   // Array nativo no PostgreSQL
+  esforcoFisico        String
+  contatos             String
+
+  requisicaoId         String     @unique
+  requisicao           Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+}
+
+// Rh e Diretoria 
+model DadosRH {
+  id               String     @id @default(uuid())
+  rhCargo          String?
+  rhSalarioExp     String?
+  rhSalario        String?
+  rhCandidato      String?
+  rhCodigo         String?
+  rhDataAdmissao   String?
+  rhRecrutamento   String?
+
+  requisicaoId     String     @unique
+  requisicao       Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+}
+
+model AvaliacaoDiretoria {
+  id             String     @id @default(uuid())
+  decisao        String     // Ex: "Aprovado" ou "Negado"
+  observacao     String?    
+  avaliadoEm     DateTime   @default(now())
+
+  requisicaoId   String     @unique
+  requisicao     Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+}
