@@ -14,7 +14,7 @@ app.use(cors());
 app.use(express.json())
 
 app.use('/api/auth', authRoutes);
-app.use('api/requisicoes', requisicaoRoutes);
+app.use('/api/requisicoes', requisicaoRoutes);
 
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`)
