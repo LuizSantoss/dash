@@ -4,8 +4,12 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../config/prisma.ts';
 
 export const registrar = async (req: Request, res: Response): Promise<void> => {
-    const { nome, email, senha, perfil } = req.body;
+    let { nome, email, senha, perfil } = req.body;
     try {
+        if (nome) nome = nome.trim();
+        if (email) email = email.trim().toLowerCase(); 
+        if (perfil) perfil = perfil.trim().toUpperCase();
+
         const usuarioExistente = await prisma.usuario.findUnique({ where: { email } });
         if (usuarioExistente) { res.status(400).json({ erro: "E-mail já cadastrado." }); return; }
 

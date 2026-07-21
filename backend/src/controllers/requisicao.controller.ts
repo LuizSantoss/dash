@@ -81,3 +81,141 @@ export const listarRequisicoesRH = async (req: Request, res: Response): Promise<
         res.status(500).json({ erro: "Erro ao buscar as requisições para o RH." });
     }
 };
+
+
+// RH encaminha para a diretoria
+export const encaminharDiretoria = async (req: Request, res: Response): Promise<void> => {
+    try {
+        // 1. Barreira de Segurança: Verifica se é realmente o perfil RH
+        if (req.usuario!.perfil !== 'RH') {
+            res.status(403).json({ erro: "Acesso negado. Apenas o RH pode encaminhar para a Diretoria." });
+            return;
+        }
+
+        // Pega o ID da URL 
+        const requisicaoId = req.params.id as string; 
+        
+        // Pega os dados exclusivos do RH que vieram do frontend
+        const { dadosRH } = req.body; 
+
+        // 2. Verifica se a requisição existe no banco
+        const requisicaoExistente = await prisma.requisicao.findUnique({
+            where: { id: requisicaoId }
+        });
+
+        if (!requisicaoExistente) {
+            res.status(404).json({ erro: "Requisição não encontrada." });
+            return;
+        }
+
+        // 3. Atualiza o status e salva os dados do RH usando Upsert 
+        const requisicaoAtualizada = await prisma.requisicao.update({
+            where: { id: requisicaoId },
+            data: {
+                status: "Aguardando Diretoria",
+                dadosRH: {
+                    upsert: {
+                        create: dadosRH,
+                        update: dadosRH
+                    }
+                }
+            },
+            include: {
+                dadosRH: true // Retorna os dados recém-salvos para confirmação
+            }
+        });
+
+        res.json({
+            mensagem: "Requisição encaminhada para a Diretoria com sucesso!",
+            requisicao: requisicaoAtualizada
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: "Erro ao encaminhar requisição para a Diretoria." });
+    }
+};
+
+
+// Listagem diretoria
+export const listarRequisicoesDiretoria = async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (req.usuario!.perfil !== 'DIRETORIA') {
+            res.status(403).json({ erro: "Acesso negado. Área exclusiva para a Diretoria." });
+            return;
+        }
+
+        // A Diretoria só vê requisições que já passaram pelo filtro do RH
+        const requisicoesDiretoria = await prisma.requisicao.findMany({
+            where: {
+                status: "Aguardando Diretoria"
+            },
+            include: {
+                dadosGerais: true,
+                dadosRH: true, // Essencial para a Diretoria ver os custos (salário)
+                gerente: {
+                    select: { nome: true, email: true }
+                }
+            },
+            orderBy: { criadoEm: 'desc' }
+        });
+
+        res.json(requisicoesDiretoria);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: "Erro ao buscar as requisições para a Diretoria." });
+    }
+};
+
+// Avaliar (APROVAR/RECUSAR)
+export const avaliarRequisicao = async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (req.usuario!.perfil !== 'DIRETORIA') {
+            res.status(403).json({ erro: "Acesso negado. Apenas a Diretoria pode avaliar." });
+            return;
+        }
+
+        const requisicaoId = req.params.id as string;
+        // A Diretoria envia a decisão ("Aprovado" ou "Recusado") e uma observação opcional
+        const { decisao, observacao } = req.body; 
+
+        const requisicaoExistente = await prisma.requisicao.findUnique({
+            where: { id: requisicaoId }
+        });
+
+        if (!requisicaoExistente) {
+            res.status(404).json({ erro: "Requisição não encontrada." });
+            return;
+        }
+
+        // Ajusta automaticamente o status geral da requisição com base na decisão
+        const novoStatus = decisao === "Aprovado" ? "Aprovada" : "Recusada";
+
+        const requisicaoAtualizada = await prisma.requisicao.update({
+            where: { id: requisicaoId },
+            data: {
+                status: novoStatus,
+                avaliacaoDiretoria: {
+                    upsert: {
+                        create: { decisao, observacao },
+                        update: { decisao, observacao }
+                    }
+                }
+            },
+            include: {
+                avaliacaoDiretoria: true
+            }
+        });
+
+        // TODO: Aqui entrará futuramente o código de envio automático de E-mail
+
+        res.json({
+            mensagem: `Requisição ${novoStatus.toLowerCase()} com sucesso!`,
+            requisicao: requisicaoAtualizada
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: "Erro ao avaliar a requisição." });
+    }
+};
