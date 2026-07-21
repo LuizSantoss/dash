@@ -10,9 +10,12 @@ import { PrismaClient } from '@prisma/client';
 // Carrega as variáveis de ambiente
 dotenv.config();
 const prisma = new PrismaClient(); // 
-const appt = express(); 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Middlewares
+app.use(cors());
+app.use(express.json());
 
 // ROTAS PÚBLICAS
 // Rota para Cadastrar Usuário
@@ -81,6 +84,43 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     } catch (error) {
         console.error(error);
         res.status(500).json({ erro: "Erro interno ao realizar login." });
+    }
+});
+
+
+// Rotas do gerente
+
+// Nova Requisição
+app.post('/api/requisicoes', verificarToken, async (req: Request, res: Response) => {
+    try {
+        // O ID do gerente vem do token decodificado pelo nosso middleware!
+        const gerenteId = req.usuario!.id;
+
+        const { dadosGerais, jornadaTrabalho, requisitosCargo, ambienteTrabalho } = req.body;
+
+        const novaRequisicao = await prisma.requisicao.create({
+            data: {
+                gerenteId,
+                dadosGerais: { create: dadosGerais },
+                jornadaTrabalho: { create: jornadaTrabalho },
+                requisitosCargo: { create: requisitosCargo },
+                ambienteTrabalho: { create: ambienteTrabalho }
+            },
+            include: {
+                dadosGerais: true,
+                jornadaTrabalho: true,
+                requisitosCargo: true,
+                ambienteTrabalho: true
+            }
+        });
+
+        res.status(201).json({ 
+            mensagem: "Requisição criada com sucesso!", 
+            requisicao: novaRequisicao 
+        });
+    } catch (error) {
+        console.error("Erro no Prisma:", error);
+        res.status(500).json({ erro: "Erro interno ao criar a requisição." });
     }
 });
 
