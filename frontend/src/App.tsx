@@ -2,10 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/auth.context';
 import { PrivateRoute } from './components/private.route';
 import Login from './pages/login.tsx';
+import PainelGerente from './pages/painelGerente';
+import NovaRequisicao from './pages/novaRequisicao.tsx';
+import PainelRH from './pages/painelRH';
+import AnaliseRH from './pages/analiseRH.tsx';
 
-// Exemplo de importação das suas páginas (você criará essas telas a seguir)
-// import PainelGerente from './pages/PainelGerente';
-// import PainelRH from './pages/PainelRH';
 // import PainelDiretoria from './pages/PainelDiretoria';
 
 function App() {
@@ -23,9 +24,14 @@ function App() {
             path="/gerente" 
             element={
               <PrivateRoute perfisPermitidos={['GERENTE']}>
-                <div>Painel do Gerente</div>
+                <PainelGerente/>
               </PrivateRoute>
             } 
+          />
+          {/* Rota de Criar Requisição */}
+          <Route 
+            path="/gerente/nova" 
+            element={<PrivateRoute perfisPermitidos={['GERENTE']}><NovaRequisicao /></PrivateRoute>} 
           />
 
           {/* Rota Protegida do RH */}
@@ -33,17 +39,23 @@ function App() {
             path="/rh" 
             element={
               <PrivateRoute perfisPermitidos={['RH']}>
-                <div>Painel do RH</div>
+                <PainelRH/>
               </PrivateRoute>
             } 
           />
+          
+          <Route 
+            path="/rh/analise/:id" 
+            element={<PrivateRoute perfisPermitidos={['RH']}><AnaliseRH /></PrivateRoute>} 
+          />
+
 
           {/* Rota Protegida da Diretoria */}
           <Route 
             path="/diretoria" 
             element={
               <PrivateRoute perfisPermitidos={['DIRETORIA']}>
-                <div>Painel da Diretoria</div>
+                <painelDiretoria/>
               </PrivateRoute>
             } 
           />
