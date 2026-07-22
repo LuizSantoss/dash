@@ -2,6 +2,7 @@
 import type { Request, Response } from 'express';
 import { prisma } from '../config/prisma.ts';
 import { enviarEmailNotificacao } from '../services/email.service.ts';
+import { getIO } from '../services/socket.service.ts';
 
 export const criarRequisicao = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -24,6 +25,7 @@ export const criarRequisicao = async (req: Request, res: Response): Promise<void
             }
         });
 
+        getIO().emit('nova_requisição', novaRequisicao);
         res.status(201).json({ mensagem: "Requisição criada com sucesso!", requisicao: novaRequisicao });
     } catch (error) {
         res.status(500).json({ erro: "Erro interno ao criar a requisição." });
@@ -126,6 +128,7 @@ export const encaminharDiretoria = async (req: Request, res: Response): Promise<
             }
         });
 
+        getIO().emit('status_atualizado', requisicaoAtualizada);
         res.json({
             mensagem: "Requisição encaminhada para a Diretoria com sucesso!",
             requisicao: requisicaoAtualizada
@@ -183,7 +186,7 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
         const requisicaoExistente = await prisma.requisicao.findUnique({
             where: { id: requisicaoId }
         });
-
+        
         if (!requisicaoExistente) {
             res.status(404).json({ erro: "Requisição não encontrada." });
             return;
@@ -207,9 +210,8 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
                 avaliacaoDiretoria: true
             }
         });
-
         
-        // 1. Vai buscar os dados do gerente para sabermos o e-mail dele
+        // Vai buscar os dados do gerente para sabermos o e-mail dele
         const dadosGerente = await prisma.usuario.findUnique({
             where: { id: requisicaoExistente.gerenteId }
         });
@@ -225,15 +227,13 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
                 <p>Acede ao Dash RH para veres mais detalhes e assinares o documento final.</p>
             `;
 
-            // 2. Dispara o e-mail de forma assíncrona (não bloqueia a resposta do servidor)
+            // Dispara o e-mail de forma assíncrona
             enviarEmailNotificacao(dadosGerente.email, assunto, html);
         }
 
-        res.json({
-            mensagem: `Requisição ${novoStatus.toLowerCase()} com sucesso!`,
-            requisicao: requisicaoAtualizada
-        });
-
+        // AQUI É O LUGAR CORRETO DO WEBSOCKET
+        // Avisa que a Diretoria deu o seu aval final
+        getIO().emit('status_atualizado', requisicaoAtualizada);
 
         res.json({
             mensagem: `Requisição ${novoStatus.toLowerCase()} com sucesso!`,
