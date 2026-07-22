@@ -1,6 +1,7 @@
 
 import type { Request, Response } from 'express';
 import { prisma } from '../config/prisma.ts';
+import { enviarEmailNotificacao } from '../services/email.service.ts';
 
 export const criarRequisicao = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -207,7 +208,32 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
             }
         });
 
-        // TODO: Aqui entrará futuramente o código de envio automático de E-mail
+        
+        // 1. Vai buscar os dados do gerente para sabermos o e-mail dele
+        const dadosGerente = await prisma.usuario.findUnique({
+            where: { id: requisicaoExistente.gerenteId }
+        });
+
+        if (dadosGerente) {
+            const assunto = `Atualização de Requisição: ${novoStatus}`;
+            const html = `
+                <h2>Olá, ${dadosGerente.nome}</h2>
+                <p>A tua requisição de pessoal acabou de ser avaliada pela Diretoria.</p>
+                <p><strong>Status Final:</strong> ${novoStatus}</p>
+                <p><strong>Observação da Diretoria:</strong> ${observacao || 'Sem observações adicionais.'}</p>
+                <br/>
+                <p>Acede ao Dash RH para veres mais detalhes e assinares o documento final.</p>
+            `;
+
+            // 2. Dispara o e-mail de forma assíncrona (não bloqueia a resposta do servidor)
+            enviarEmailNotificacao(dadosGerente.email, assunto, html);
+        }
+
+        res.json({
+            mensagem: `Requisição ${novoStatus.toLowerCase()} com sucesso!`,
+            requisicao: requisicaoAtualizada
+        });
+
 
         res.json({
             mensagem: `Requisição ${novoStatus.toLowerCase()} com sucesso!`,
