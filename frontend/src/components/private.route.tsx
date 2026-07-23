@@ -10,13 +10,13 @@ interface PrivateRouteProps {
 export const PrivateRoute = ({ children, perfisPermitidos }: PrivateRouteProps) => {
   const contexto = useContext(AuthContext);
 
-  // Prevenção de erro caso o contexto ainda não tenha inicializado
-  if (!contexto) return null;
+  // Se o contexto não existir ou ainda estiver a ler o localStorage, mostra apenas um ecrã vazio ou "A carregar"
+  if (!contexto || contexto.carregandoDados) {
+    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">A carregar sistema...</div>;
+  }
 
   const { usuario } = contexto;
-
-  // 1ª Barreira: O usuário nem está logado? Expulsa para a tela de Login.
-  // O "replace" serve para apagar o histórico, impedindo que ele volte clicando na seta do navegador.
+  
   if (!usuario) {
     return <Navigate to="/login" replace />;
   }

@@ -20,6 +20,7 @@ model Usuario {
 model Requisicao {
   id           String   @id @default(uuid())
   criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
   status       String   @default("Pendente") 
   
   // O Gerente que criou a requisição

@@ -11,6 +11,7 @@ interface Usuario {
 interface AuthContextType {
   usuario: Usuario | null;
   token: string | null;
+  carregandoDados: boolean;
   login: (token: string) => void;
   logout: () => void;
 }
@@ -22,6 +23,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [ carregandoDados, setCarregandoDados ] = useState(true);
 
   // Assim que o site abre, ele procura se o usuário deixou um token salvo no navegador
   useEffect(() => {
@@ -36,6 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem('@dashRH:token');
       }
     }
+    setCarregandoDados(false); 
   }, []);
 
   // Função chamada na tela de Login quando o backend diz "OK"
@@ -54,7 +57,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ usuario, token, login, logout }}>
+    <AuthContext.Provider value={{ usuario, token, carregandoDados, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

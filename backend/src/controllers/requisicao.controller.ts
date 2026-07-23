@@ -124,7 +124,11 @@ export const encaminharDiretoria = async (req: Request, res: Response): Promise<
                 }
             },
             include: {
-                dadosRH: true // Retorna os dados recém-salvos para confirmação
+                dadosRH: true, // Retorna os dados recém-salvos para confirmação
+                dadosGerais: true,
+                gerente: { select: { nome: true, email:true}},
+                avaliacaoDiretoria: true
+
             }
         });
 
@@ -171,6 +175,43 @@ export const listarRequisicoesDiretoria = async (req: Request, res: Response): P
     }
 };
 
+
+// ==========================================
+// HISTÓRICO DA DIRETORIA
+// ==========================================
+export const listarHistoricoDiretoria = async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (req.usuario!.perfil !== 'DIRETORIA') {
+            res.status(403).json({ erro: "Acesso negado. Área exclusiva para a Diretoria." });
+            return;
+        }
+
+        // Busca apenas as requisições que já foram Aprovadas ou Recusadas
+        const historico = await prisma.requisicao.findMany({
+            where: {
+                status: {
+                    in: ["Aprovada", "Recusada"]
+                }
+            },
+            include: {
+                dadosGerais: true,
+                dadosRH: true,
+                gerente: {
+                    select: { nome: true }
+                },
+                avaliacaoDiretoria: true // Traz a observação que o Diretor deixou!
+            },
+            // orderBy: { atualizadoEm: 'desc' } // Mostra as avaliadas mais recentemente no topo
+        });
+
+        res.json(historico);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: "Erro ao buscar o histórico da Diretoria." });
+    }
+};
+
+
 // Avaliar (APROVAR/RECUSAR)
 export const avaliarRequisicao = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -207,6 +248,8 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
                 }
             },
             include: {
+                dadosGerais: true,
+                gerente: { select: { nome: true, email:true}},
                 avaliacaoDiretoria: true
             }
         });

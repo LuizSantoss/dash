@@ -5,7 +5,8 @@ import {
     listarRequisicoesRH, 
     encaminharDiretoria,
     listarRequisicoesDiretoria,
-    avaliarRequisicao
+    avaliarRequisicao,
+    listarHistoricoDiretoria
 } from "../controllers/requisicao.controller.ts";
 import { verificarToken } from "../middleware/auth.middleware.ts";
 
@@ -15,6 +16,7 @@ const router = Router();
 router.get('/minhas', verificarToken, listarMinhasRequisicoes);
 router.get('/rh', verificarToken, listarRequisicoesRH);
 router.get('/diretoria', verificarToken, listarRequisicoesDiretoria); // <-- Nova rota
+router.get('/diretoria/historico', verificarToken, listarHistoricoDiretoria)
 
 // Rotas de criação e atualização (POST / PUT)
 router.post('/', verificarToken, criarRequisicao);
