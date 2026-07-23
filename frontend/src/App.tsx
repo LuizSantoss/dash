@@ -1,13 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/auth.context';
 import { PrivateRoute } from './components/private.route';
-import Login from './pages/login.tsx';
+import Login from './pages/Login.tsx';
 import PainelGerente from './pages/painelGerente';
 import NovaRequisicao from './pages/novaRequisicao.tsx';
 import PainelRH from './pages/painelRH';
 import AnaliseRH from './pages/analiseRH.tsx';
-
-// import PainelDiretoria from './pages/PainelDiretoria';
+import PainelDiretoria from './pages/painelDiretoria';
 
 function App() {
   return (
@@ -55,7 +54,7 @@ function App() {
             path="/diretoria" 
             element={
               <PrivateRoute perfisPermitidos={['DIRETORIA']}>
-                <painelDiretoria/>
+                <PainelDiretoria/>
               </PrivateRoute>
             } 
           />

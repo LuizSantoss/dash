@@ -15,7 +15,7 @@ export default function NovaRequisicao() {
   // O estado reflete EXATAMENTE o que o Prisma backend espera receber
   const [formData, setFormData] = useState({
     dadosGerais: { empresa: '', cargoSolicitado: '', departamento: '', motivoRequisicao: '', formaContratacao: '', justificativaAumento: '' },
-    jornadaTrabalho: { periodo: '', horarioTrabalho: '', entrada: '', saída: '' },
+    jornadaTrabalho: { periodo: '', horarioTrabalho: '', entrada: '', saida: '' },
     requisitosCargo: { idade: '', sexo: '', escolaridade: '', curso: '' },
     ambienteTrabalho: { condicoesAmbientais: [] as string[], esforcoFisico: '', contatos: '' }
   });
@@ -154,8 +154,8 @@ export default function NovaRequisicao() {
                   <input required type="time" className={inputClass} value={formData.jornadaTrabalho.entrada} onChange={e => handleChange('jornadaTrabalho', 'entrada', e.target.value)} />
                 </div>
                 <div>
-                  <label className={labelClass}>Saída (Horário)</label>
-                  <input required type="time" className={inputClass} value={formData.jornadaTrabalho.saída} onChange={e => handleChange('jornadaTrabalho', 'saída', e.target.value)} />
+                  <label className={labelClass}>saida (Horário)</label>
+                  <input required type="time" className={inputClass} value={formData.jornadaTrabalho.saida} onChange={e => handleChange('jornadaTrabalho', 'saida', e.target.value)} />
                 </div>
               </div>
             </div>
