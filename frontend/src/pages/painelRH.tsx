@@ -26,7 +26,6 @@ export default function PainelRH() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 1. Carregamento Inicial das Requisições
     const buscarRequisicoes = async () => {
       try {
         const resposta = await fetch('http://localhost:3000/api/requisicoes/rh', {
@@ -46,27 +45,27 @@ export default function PainelRH() {
 
     if (contexto?.token) buscarRequisicoes();
 
-    // 2. Conexão com o WebSocket para atualizações em Tempo Real
     const socket = io('http://localhost:3000');
 
-    // Escuta novas requisições criadas pelos gerentes
-    socket.on('nova_requisicao', (novaRequisicao: Requisicao) => {
-      // Adiciona a nova requisição no topo da lista automaticamente
-      setRequisicoes((estadoAnterior) => [novaRequisicao, ...estadoAnterior]);
+    // Escuta novas requisições com filtro anti-duplicação por ID
+    socket.on('nova_requisicao', (novaReq: Requisicao) => {
+      setRequisicoes((prev) => [novaReq, ...prev.filter(r => r.id !== novaReq.id)]);
     });
 
-    // Escuta atualizações de status (ex: Diretoria aprovou)
-    socket.on('status_atualizado', (requisicaoAtualizada: Requisicao) => {
-      setRequisicoes((estadoAnterior) => 
-        estadoAnterior.map(req => req.id === requisicaoAtualizada.id ? requisicaoAtualizada : req)
+    // Escuta atualizações de status
+    socket.on('status_atualizado', (reqAtualizada: Requisicao) => {
+      setRequisicoes((prev) => 
+        prev.map(r => r.id === reqAtualizada.id ? reqAtualizada : r)
       );
     });
 
-    // Limpeza da conexão quando o utilizador sai da página
     return () => {
+      socket.off('nova_requisicao');
+      socket.off('status_atualizado');
       socket.disconnect();
     };
   }, [contexto?.token]);
+
 
   const corStatus = (status: string) => {
     switch (status) {

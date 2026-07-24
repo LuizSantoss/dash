@@ -32,7 +32,6 @@ export default function PainelDiretoria() {
       try {
         const config = { headers: { 'Authorization': `Bearer ${contexto?.token}` } };
         
-        // Fazemos as duas buscas ao mesmo tempo para a tela carregar mais rápido (Promise.all)
         const [resPendentes, resHistorico] = await Promise.all([
           fetch('http://localhost:3000/api/requisicoes/diretoria', config),
           fetch('http://localhost:3000/api/requisicoes/diretoria/historico', config)
@@ -55,17 +54,23 @@ export default function PainelDiretoria() {
     if (contexto?.token) carregarDados();
 
     const socket = io('http://localhost:3000');
+
     socket.on('status_atualizado', (reqAtualizada: Requisicao) => {
       if (reqAtualizada.status === 'Aguardando Diretoria') {
-        setRequisicoes(prev => prev.find(r => r.id === reqAtualizada.id) ? prev : [reqAtualizada, ...prev]);
+        // Adiciona nas pendentes sem duplicar
+        setRequisicoes(prev => [reqAtualizada, ...prev.filter(r => r.id !== reqAtualizada.id)]);
       } else if (reqAtualizada.status === 'Aprovada' || reqAtualizada.status === 'Recusada') {
-        // Se outro diretor aprovar, move da lista de pendentes para o histórico em tempo real
+        // Remove das pendentes
         setRequisicoes(prev => prev.filter(r => r.id !== reqAtualizada.id));
-        setHistorico(prev => prev.find(r => r.id === reqAtualizada.id) ? prev : [reqAtualizada, ...prev]);
+        // Adiciona no histórico garantindo NENHUMA duplicata
+        setHistorico(prev => [reqAtualizada, ...prev.filter(r => r.id !== reqAtualizada.id)]);
       }
     });
 
-    return () => { socket.disconnect(); };
+    return () => { 
+      socket.off('status_atualizado');
+      socket.disconnect(); 
+    };
   }, [contexto?.token]);
 
   const handleAvaliar = async (decisao: 'Aprovado' | 'Recusado') => {
@@ -89,9 +94,9 @@ export default function PainelDiretoria() {
 
       alert(`Requisição ${decisao.toLowerCase()} com sucesso!`);
       
-      // Atualiza o ecrã instantaneamente
+      // Atualização limpa e anti-duplicação local
       setRequisicoes(prev => prev.filter(r => r.id !== reqAtualizada.id));
-      setHistorico(prev => [reqAtualizada, ...prev]);
+      setHistorico(prev => [reqAtualizada, ...prev.filter(r => r.id !== reqAtualizada.id)]);
       
       setRequisicaoSelecionada(null);
       setObservacao('');
@@ -101,6 +106,7 @@ export default function PainelDiretoria() {
       setProcessando(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-slate-100 p-8">

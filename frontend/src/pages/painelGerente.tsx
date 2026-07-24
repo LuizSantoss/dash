@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/auth.context';
+import { io } from 'socket.io-client';
 
 // Definimos o formato (tipagem) do que esperamos receber da nossa API
 interface Requisicao {
@@ -28,7 +29,6 @@ export default function PainelGerente() {
         const resposta = await fetch('http://localhost:3000/api/requisicoes/minhas', {
           method: 'GET',
           headers: {
-            // A chave mágica: enviamos o token para provar quem somos!
             'Authorization': `Bearer ${contexto?.token}`,
             'Content-Type': 'application/json'
           }
@@ -48,7 +48,25 @@ export default function PainelGerente() {
     if (contexto?.token) {
       buscarRequisicoes();
     }
+
+    // <-- 2. ADICIONE ESTE BLOCO DO SOCKET AQUI -->
+    const socket = io('http://localhost:3000');
+
+    // Escuta sempre que o RH ou a Diretoria mudarem o status da requisição dele
+    socket.on('status_atualizado', (reqAtualizada: Requisicao) => {
+      setRequisicoes((prev) => 
+        prev.map(r => r.id === reqAtualizada.id ? reqAtualizada : r)
+      );
+    });
+
+    return () => {
+      socket.off('status_atualizado');
+      socket.disconnect();
+    };
+    // <-- FIM DO BLOCO DO SOCKET -->
+
   }, [contexto?.token]);
+
 
   // Função auxiliar para pintar a etiqueta de status com a cor correta
   const corStatus = (status: string) => {

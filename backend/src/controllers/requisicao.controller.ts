@@ -126,7 +126,7 @@ export const encaminharDiretoria = async (req: Request, res: Response): Promise<
             },
             include: {
                 dadosGerais: true,
-                dadosRH: true, // Retorna os dados recém-salvos para confirmação
+                dadosRH: true, //  Retorna os dados recém-salvos para confirmação
                 gerente: { select: { nome: true, email:true}},
                 avaliacaoDiretoria: true
 
