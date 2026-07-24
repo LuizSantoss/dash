@@ -21,7 +21,8 @@ export const criarRequisicao = async (req: Request, res: Response): Promise<void
                 dadosGerais: true,
                 jornadaTrabalho: true,
                 requisitosCargo: true,
-                ambienteTrabalho: true
+                ambienteTrabalho: true,
+                gerente: {select: { nome: true, email: true}}
             }
         });
 
@@ -124,8 +125,8 @@ export const encaminharDiretoria = async (req: Request, res: Response): Promise<
                 }
             },
             include: {
-                dadosRH: true, // Retorna os dados recém-salvos para confirmação
                 dadosGerais: true,
+                dadosRH: true, // Retorna os dados recém-salvos para confirmação
                 gerente: { select: { nome: true, email:true}},
                 avaliacaoDiretoria: true
 
@@ -201,7 +202,7 @@ export const listarHistoricoDiretoria = async (req: Request, res: Response): Pro
                 },
                 avaliacaoDiretoria: true // Traz a observação que o Diretor deixou!
             },
-            // orderBy: { atualizadoEm: 'desc' } // Mostra as avaliadas mais recentemente no topo
+            orderBy: { atualizadoEm: 'desc' } // Mostra as avaliadas mais recentemente no topo
         });
 
         res.json(historico);
