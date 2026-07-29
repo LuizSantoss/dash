@@ -1,59 +1,35 @@
-import { Client } from "@microsoft/microsoft-graph-client";
-import { ConfidentialClientApplication } from "@azure/msal-node";
-import "isomorphic-fetch";
+import nodemailer from 'nodemailer';
 
-// 1. Configuração do Autenticador da Microsoft
-const msalConfig = {
+// 1. Configuração do Motor SMTP
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT), 
+    secure: process.env.SMTP_PORT === '465', 
     auth: {
-        clientId: process.env.GRAPH_CLIENT_ID as string,
-        clientSecret: process.env.GRAPH_CLIENT_SECRET as string,
-        authority: `https://login.microsoftonline.com/${process.env.GRAPH_TENANT_ID}`
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+    tls: {
+        // Como o sistema vai rodar em servidor privado, isso evita bloqueios 
+        // caso o servidor de e-mail use certificados locais (self-signed)
+        rejectUnauthorized: false 
     }
-};
+});
 
-const cca = new ConfidentialClientApplication(msalConfig);
-
-// 2. Função privada para gerar o token do Microsoft Graph
-const obterTokenAcesso = async (): Promise<string> => {
-    const clientCredentialRequest = {
-        scopes: ["https://graph.microsoft.com/.default"],
-    };
-    const response = await cca.acquireTokenByClientCredential(clientCredentialRequest);
-    return response?.accessToken || '';
-};
-
-// 3. Função pública para enviar o e-mail
+// 2. Função pública para enviar o e-mail (Mantivemos a mesma estrutura!)
 export const enviarEmailNotificacao = async (destinatario: string, assunto: string, conteudoHtml: string): Promise<void> => {
     try {
-        const token = await obterTokenAcesso();
+        const remetente = process.env.EMAIL_REMETENTE;
 
-        const client = Client.init({
-            authProvider: (done) => {
-                done(null, token);
-            }
+        const info = await transporter.sendMail({
+            from: `"Dash RH" <${remetente}>`, // Nome do sistema + email
+            to: destinatario,
+            subject: assunto,
+            html: conteudoHtml,
         });
 
-        const mensagem = {
-            message: {
-                subject: assunto,
-                body: {
-                    contentType: "HTML",
-                    content: conteudoHtml
-                },
-                toRecipients: [
-                    { emailAddress: { address: destinatario } }
-                ]
-            },
-            saveToSentItems: "false"
-        };
-
-        const remetente = process.env.EMAIL_REMETENTE;
-        
-        // Faz o pedido à API do Outlook para enviar a mensagem
-        await client.api(`/users/${remetente}/sendMail`).post(mensagem);
-        
-        console.log(`E-mail enviado com sucesso para: ${destinatario}`);
+        console.log(`E-mail enviado com sucesso para: ${destinatario} | ID da Mensagem: ${info.messageId}`);
     } catch (error) {
-        console.error("Falha ao enviar e-mail via MS Graph:", error);
+        console.error("Falha ao enviar e-mail via SMTP:", error);
     }
 };
