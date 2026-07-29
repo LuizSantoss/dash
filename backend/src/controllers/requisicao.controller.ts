@@ -1,4 +1,3 @@
-
 import type { Request, Response } from 'express';
 import { prisma } from '../config/prisma.ts';
 import { enviarEmailNotificacao } from '../services/email.service.ts';
@@ -22,7 +21,7 @@ export const criarRequisicao = async (req: Request, res: Response): Promise<void
                 jornadaTrabalho: true,
                 requisitosCargo: true,
                 ambienteTrabalho: true,
-                gerente: {select: { nome: true, email: true}}
+                gerente: {select: { nome: true, email: true, setor: true }} // Adicionado setor
             }
         });
 
@@ -33,22 +32,18 @@ export const criarRequisicao = async (req: Request, res: Response): Promise<void
     }
 };
 
-
-
 // Listagem do gerente
 export const listarMinhasRequisicoes = async (req: Request, res: Response): Promise<void> => {
     try {
-        // O ID vem de forma segura do token JWT
         const gerenteId = req.usuario!.id;
 
         const minhasRequisicoes = await prisma.requisicao.findMany({
             where: { gerenteId },
-            // O Prisma traz as tabelas relacionadas automaticamente
             include: {
                 dadosGerais: true,
-                avaliacaoDiretoria: true // mostrar o selo de Aprovado/Recusado no futuro
+                avaliacaoDiretoria: true 
             },
-            orderBy: { criadoEm: 'desc' } // Mostra as mais recentes primeiro
+            orderBy: { criadoEm: 'desc' } 
         });
 
         res.json(minhasRequisicoes);
@@ -58,22 +53,19 @@ export const listarMinhasRequisicoes = async (req: Request, res: Response): Prom
     }
 };
 
-
 // Listagem RH
 export const listarRequisicoesRH = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Camada extra de segurança: garantir que o utilizador tem o perfil 'RH'
         if (req.usuario!.perfil !== 'RH') {
             res.status(403).json({ erro: "Acesso negado. Área exclusiva para o RH." });
             return;
         }
 
         const requisicoesRH = await prisma.requisicao.findMany({
-            // O RH precisa de ver todas as requisições 
             include: {
                 dadosGerais: true,
                 gerente: {
-                    select: { nome: true, email: true } // Traz apenas o nome e email do gerente que pediu
+                    select: { nome: true, email: true, setor: true } // Adicionado setor
                 }
             },
             orderBy: { criadoEm: 'desc' }
@@ -86,23 +78,17 @@ export const listarRequisicoesRH = async (req: Request, res: Response): Promise<
     }
 };
 
-
 // RH encaminha para a diretoria
 export const encaminharDiretoria = async (req: Request, res: Response): Promise<void> => {
     try {
-        // 1. Barreira de Segurança: Verifica se é realmente o perfil RH
         if (req.usuario!.perfil !== 'RH') {
             res.status(403).json({ erro: "Acesso negado. Apenas o RH pode encaminhar para a Diretoria." });
             return;
         }
 
-        // Pega o ID da URL 
         const requisicaoId = req.params.id as string; 
-        
-        // Pega os dados exclusivos do RH que vieram do frontend
         const { dadosRH } = req.body; 
 
-        // 2. Verifica se a requisição existe no banco
         const requisicaoExistente = await prisma.requisicao.findUnique({
             where: { id: requisicaoId }
         });
@@ -112,7 +98,6 @@ export const encaminharDiretoria = async (req: Request, res: Response): Promise<
             return;
         }
 
-        // 3. Atualiza o status e salva os dados do RH usando Upsert 
         const requisicaoAtualizada = await prisma.requisicao.update({
             where: { id: requisicaoId },
             data: {
@@ -126,10 +111,9 @@ export const encaminharDiretoria = async (req: Request, res: Response): Promise<
             },
             include: {
                 dadosGerais: true,
-                dadosRH: true, //  Retorna os dados recém-salvos para confirmação
-                gerente: { select: { nome: true, email:true}},
+                dadosRH: true, 
+                gerente: { select: { nome: true, email:true, setor: true }}, // Adicionado setor
                 avaliacaoDiretoria: true
-
             }
         });
 
@@ -145,7 +129,6 @@ export const encaminharDiretoria = async (req: Request, res: Response): Promise<
     }
 };
 
-
 // Listagem diretoria
 export const listarRequisicoesDiretoria = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -154,16 +137,15 @@ export const listarRequisicoesDiretoria = async (req: Request, res: Response): P
             return;
         }
 
-        // A Diretoria só vê requisições que já passaram pelo filtro do RH
         const requisicoesDiretoria = await prisma.requisicao.findMany({
             where: {
                 status: "Aguardando Diretoria"
             },
             include: {
                 dadosGerais: true,
-                dadosRH: true, // Essencial para a Diretoria ver os custos (salário)
+                dadosRH: true, 
                 gerente: {
-                    select: { nome: true, email: true }
+                    select: { nome: true, email: true, setor: true } // Adicionado setor
                 }
             },
             orderBy: { criadoEm: 'desc' }
@@ -176,10 +158,7 @@ export const listarRequisicoesDiretoria = async (req: Request, res: Response): P
     }
 };
 
-
-// ==========================================
-// HISTÓRICO DA DIRETORIA
-// ==========================================
+// Histórico da Diretoria
 export const listarHistoricoDiretoria = async (req: Request, res: Response): Promise<void> => {
     try {
         if (req.usuario!.perfil !== 'DIRETORIA') {
@@ -187,7 +166,6 @@ export const listarHistoricoDiretoria = async (req: Request, res: Response): Pro
             return;
         }
 
-        // Busca apenas as requisições que já foram Aprovadas ou Recusadas
         const historico = await prisma.requisicao.findMany({
             where: {
                 status: {
@@ -198,11 +176,11 @@ export const listarHistoricoDiretoria = async (req: Request, res: Response): Pro
                 dadosGerais: true,
                 dadosRH: true,
                 gerente: {
-                    select: { nome: true }
+                    select: { nome: true, setor: true } // Adicionado setor
                 },
-                avaliacaoDiretoria: true // Traz a observação que o Diretor deixou!
+                avaliacaoDiretoria: true 
             },
-            orderBy: { atualizadoEm: 'desc' } // Mostra as avaliadas mais recentemente no topo
+            orderBy: { atualizadoEm: 'desc' } 
         });
 
         res.json(historico);
@@ -211,7 +189,6 @@ export const listarHistoricoDiretoria = async (req: Request, res: Response): Pro
         res.status(500).json({ erro: "Erro ao buscar o histórico da Diretoria." });
     }
 };
-
 
 // Avaliar (APROVAR/RECUSAR)
 export const avaliarRequisicao = async (req: Request, res: Response): Promise<void> => {
@@ -222,7 +199,6 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
         }
 
         const requisicaoId = req.params.id as string;
-        // A Diretoria envia a decisão ("Aprovado" ou "Recusado") e uma observação opcional
         const { decisao, observacao } = req.body; 
 
         const requisicaoExistente = await prisma.requisicao.findUnique({
@@ -234,7 +210,6 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
             return;
         }
 
-        // Ajusta automaticamente o status geral da requisição com base na decisão
         const novoStatus = decisao === "Aprovado" ? "Aprovada" : "Recusada";
 
         const requisicaoAtualizada = await prisma.requisicao.update({
@@ -250,12 +225,11 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
             },
             include: {
                 dadosGerais: true,
-                gerente: { select: { nome: true, email:true}},
+                gerente: { select: { nome: true, email:true, setor: true }}, // Adicionado setor
                 avaliacaoDiretoria: true
             }
         });
         
-        // Vai buscar os dados do gerente para sabermos o e-mail dele
         const dadosGerente = await prisma.usuario.findUnique({
             where: { id: requisicaoExistente.gerenteId }
         });
@@ -268,15 +242,12 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
                 <p><strong>Status Final:</strong> ${novoStatus}</p>
                 <p><strong>Observação da Diretoria:</strong> ${observacao || 'Sem observações adicionais.'}</p>
                 <br/>
-                <p>Acede ao Dash RH para veres mais detalhes e assinares o documento final.</p>
+                <p>Acesse o Dash RH para ver mais detalhes e assinar o documento final.</p>
             `;
 
-            // Dispara o e-mail de forma assíncrona
             enviarEmailNotificacao(dadosGerente.email, assunto, html);
         }
 
-        // AQUI É O LUGAR CORRETO DO WEBSOCKET
-        // Avisa que a Diretoria deu o seu aval final
         getIO().emit('status_atualizado', requisicaoAtualizada);
 
         res.json({
@@ -287,5 +258,36 @@ export const avaliarRequisicao = async (req: Request, res: Response): Promise<vo
     } catch (error) {
         console.error(error);
         res.status(500).json({ erro: "Erro ao avaliar a requisição." });
+    }
+};
+
+// ==========================================
+// FUNÇÕES EXCLUSIVAS DO ADMINISTRADOR (ADM)
+// ==========================================
+
+export const listarTodasRequisicoesADM = async (req: Request, res: Response): Promise<void> => {
+    try {
+        if (req.usuario!.perfil !== 'ADM') {
+            res.status(403).json({ erro: "Acesso negado. Área exclusiva para o Administrador." });
+            return;
+        }
+
+        // O ADM puxa o banco de dados inteiro para visualizar o andamento global
+        const todasRequisicoes = await prisma.requisicao.findMany({
+            include: {
+                dadosGerais: true,
+                dadosRH: true,
+                avaliacaoDiretoria: true,
+                gerente: {
+                    select: { nome: true, email: true, setor: true }
+                }
+            },
+            orderBy: { criadoEm: 'desc' }
+        });
+
+        res.json(todasRequisicoes);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ erro: "Erro ao buscar as requisições para o Administrador." });
     }
 };

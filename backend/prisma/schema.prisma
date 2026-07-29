@@ -13,7 +13,8 @@ model Usuario {
   nome        String
   email       String       @unique
   senha       String
-  perfil      String       // Ex: GERENTE, RH, DIRETORIA
+  perfil      String       // Ex: GERENTE, RH, DIRETORIA, ADM
+  setor       String?      // NOVO: Mapeamento de setor do gerente
   requisicoes Requisicao[] 
 }
 
