@@ -3,37 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/auth.context';
 import { io } from 'socket.io-client';
 
-// A tipagem ajustada para o que a rota do RH devolve (inclui os dados do Gerente)
 interface Requisicao {
   id: string;
   status: string;
   criadoEm: string;
-  dadosGerais: {
-    cargoSolicitado: string;
-    departamento: string;
-  };
-  gerente: {
-    nome: string;
-  };
+  dadosGerais: { cargoSolicitado: string; departamento: string; };
+  gerente: { nome: string; setor?: string; }; // NOVO: Mapeamento de setor incluído
 }
 
 export default function PainelRH() {
   const [requisicoes, setRequisicoes] = useState<Requisicao[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
-
   const contexto = useContext(AuthContext);
   const navigate = useNavigate();
+
+  const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const buscarRequisicoes = async () => {
       try {
-        const resposta = await fetch('http://localhost:3000/api/requisicoes/rh', {
+        const resposta = await fetch(`${apiUrl}/api/requisicoes/rh`, {
           headers: { 'Authorization': `Bearer ${contexto?.token}` }
         });
-
         if (!resposta.ok) throw new Error('Falha ao carregar a caixa de entrada.');
-
         const dados = await resposta.json();
         setRequisicoes(dados);
       } catch (err: any) {
@@ -45,16 +38,15 @@ export default function PainelRH() {
 
     if (contexto?.token) buscarRequisicoes();
 
-    const socket = io('http://localhost:3000');
-
-    // Escuta novas requisições com filtro anti-duplicação por ID
+    // Socket.io via variável de ambiente
+    const socket = io(apiUrl);
+    
     socket.on('nova_requisicao', (novaReq: Requisicao) => {
       setRequisicoes((prev) => [novaReq, ...prev.filter(r => r.id !== novaReq.id)]);
     });
 
-    // Escuta atualizações de status
     socket.on('status_atualizado', (reqAtualizada: Requisicao) => {
-      setRequisicoes((prev) => 
+      setRequisicoes((prev) =>
         prev.map(r => r.id === reqAtualizada.id ? reqAtualizada : r)
       );
     });
@@ -64,94 +56,96 @@ export default function PainelRH() {
       socket.off('status_atualizado');
       socket.disconnect();
     };
-  }, [contexto?.token]);
-
+  }, [contexto?.token, apiUrl]);
 
   const corStatus = (status: string) => {
     switch (status) {
-      case 'Pendente': return 'bg-yellow-100 text-yellow-800';
-      case 'Aguardando Diretoria': return 'bg-blue-100 text-blue-800';
-      case 'Aprovada': return 'bg-green-100 text-green-800';
-      case 'Recusada': return 'bg-red-100 text-red-800';
+      case 'Pendente': return 'bg-amber-100 text-amber-800 border border-amber-300';
+      case 'Aguardando Diretoria': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+      case 'Aprovada': return 'bg-green-100 text-green-800 border border-green-300';
+      case 'Recusada': return 'bg-rose-100 text-rose-800 border border-rose-300';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      {/* Cabeçalho */}
-      <div className="max-w-6xl mx-auto flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Cabeçalho Verde Escuro da Empresa */}
+      <header className="bg-emerald-800 text-white shadow-lg px-8 py-6 flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Caixa de Entrada (RH)</h1>
-          <p className="text-gray-500">Faz a triagem e o preenchimento financeiro das requisições.</p>
+          <h1 className="text-2xl font-bold">Caixa de Entrada (RH)</h1>
+          <p className="text-sm text-emerald-100">Triagem e preenchimento financeiro das requisições</p>
         </div>
-        <button 
-          onClick={contexto?.logout}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-5 py-2 rounded-lg font-medium transition-all"
+        <button
+          onClick={() => { contexto?.logout(); navigate('/login'); }}
+          className="bg-emerald-900 hover:bg-emerald-950 text-white px-4 py-2 rounded-lg text-sm font-semibold transition border border-emerald-700"
         >
           Sair
         </button>
-      </div>
+      </header>
 
-      {/* Tabela de Requisições */}
-      <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <main className="max-w-7xl mx-auto p-8">
         {carregando ? (
-          <div className="p-8 text-center text-gray-500">A carregar dados...</div>
+          <p className="text-center text-gray-600 py-12 font-medium">A carregar dados do sistema...</p>
         ) : erro ? (
-          <div className="p-8 text-center text-red-500">{erro}</div>
+          <div className="bg-rose-100 text-rose-700 p-4 rounded-lg font-medium">{erro}</div>
         ) : requisicoes.length === 0 ? (
-          <div className="p-12 text-center text-gray-500">
-            Nenhuma requisição na tua caixa de entrada.
+          <div className="bg-white p-12 text-center rounded-xl shadow border border-gray-200">
+            <p className="text-gray-500 font-medium">Nenhuma requisição na sua caixa de entrada.</p>
           </div>
         ) : (
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-200 text-sm text-gray-600">
-                <th className="p-4 font-semibold">Cargo / Departamento</th>
-                <th className="p-4 font-semibold">Solicitante</th>
-                <th className="p-4 font-semibold">Data</th>
-                <th className="p-4 font-semibold">Status</th>
-                <th className="p-4 font-semibold text-right">Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requisicoes.map((req) => (
-                <tr key={req.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="p-4">
-                    <p className="font-medium text-gray-800">{req.dadosGerais?.cargoSolicitado}</p>
-                    <p className="text-xs text-gray-500">{req.dadosGerais?.departamento}</p>
-                  </td>
-                  <td className="p-4 text-gray-600 font-medium">
-                    {/* O nome do gerente vem através da relação (JOIN) do Prisma! */}
-                    {req.gerente?.nome} 
-                  </td>
-                  <td className="p-4 text-gray-600">
-                    {new Date(req.criadoEm).toLocaleDateString('pt-PT')}
-                  </td>
-                  <td className="p-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${corStatus(req.status)}`}>
-                      {req.status}
-                    </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    {req.status === 'Pendente' ? (
-                      <button 
-                        // Iremos criar a página de "Análise do RH" no próximo passo
-                        onClick={() => navigate(`/rh/analise/${req.id}`)}
-                        className="text-sm bg-blue-50 text-blue-600 font-medium px-4 py-2 rounded-lg hover:bg-blue-100 transition"
-                      >
-                        Analisar / Preencher
-                      </button>
-                    ) : (
-                      <span className="text-sm text-gray-400">Em processamento</span>
-                    )}
-                  </td>
+          <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-emerald-50 text-emerald-900 uppercase text-xs font-bold border-b border-gray-200">
+                  <th className="p-4">Cargo / Departamento</th>
+                  <th className="p-4">Solicitante (Setor)</th>
+                  <th className="p-4">Data</th>
+                  <th className="p-4">Status</th>
+                  <th className="p-4 text-center">Ação</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-gray-100 text-sm">
+                {requisicoes.map((req) => (
+                  <tr key={req.id} className="hover:bg-gray-50/80 transition">
+                    <td className="p-4 font-semibold text-gray-800">
+                      {req.dadosGerais?.cargoSolicitado}
+                      <span className="block text-xs font-normal text-gray-500">{req.dadosGerais?.departamento}</span>
+                    </td>
+                    <td className="p-4 text-gray-700">
+                      <span className="font-medium">{req.gerente?.nome}</span>
+                      {/* NOVO: Exibindo o setor de quem solicitou */}
+                      <span className="block text-xs text-emerald-700 font-semibold">
+                        Setor: {req.gerente?.setor || 'Não informado'}
+                      </span>
+                    </td>
+                    <td className="p-4 text-gray-600">
+                      {new Date(req.criadoEm).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="p-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${corStatus(req.status)}`}>
+                        {req.status}
+                      </span>
+                    </td>
+                    <td className="p-4 text-center">
+                      {req.status === 'Pendente' ? (
+                        <button
+                          onClick={() => navigate(`/rh/analise/${req.id}`)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-4 py-2 rounded-lg text-xs transition shadow"
+                        >
+                          Analisar / Preencher
+                        </button>
+                      ) : (
+                        <span className="text-xs font-medium text-gray-400">Em processamento</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
