@@ -65,7 +65,7 @@ export default function NovaRequisicao() {
     setErro('');
 
     try {
-      const url = `${import.meta.env.VITE_API_URL}/api/requisicoes`;
+      const url = `${import.meta.env.VITE_API_URL}${import.meta.env.VITE_API_REQ_BASE}`;
       const resposta = await fetch(url, {
         method: 'POST',
         headers: {

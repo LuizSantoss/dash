@@ -23,7 +23,7 @@ export default function PainelRH() {
   useEffect(() => {
     const buscarRequisicoes = async () => {
       try {
-        const resposta = await fetch(`${apiUrl}/api/requisicoes/rh`, {
+        const resposta = await fetch(`${apiUrl}${import.meta.env.VITE_API_REQ_RH}`, {
           headers: { 'Authorization': `Bearer ${contexto?.token}` }
         });
         if (!resposta.ok) throw new Error('Falha ao carregar a caixa de entrada.');

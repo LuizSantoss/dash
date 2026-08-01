@@ -28,35 +28,40 @@ export default function AnaliseRH() {
     setDadosRH(prev => ({ ...prev, [campo]: valor }));
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setCarregando(true);
-    setErro('');
+const handleSubmit = async (e: FormEvent) => {
+  e.preventDefault();
+  setCarregando(true);
+  setErro('');
 
-    try {
-      const resposta = await fetch(`http://localhost:3000/api/requisicoes/${id}/encaminhar-diretoria`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${contexto?.token}`
-        },
-        // O backend espera um objeto com a propriedade "dadosRH"
-        body: JSON.stringify({ dadosRH }) 
-      });
+  try {
+    const apiUrl = import.meta.env.VITE_API_URL;
+    const reqBase = import.meta.env.VITE_API_REQ_BASE;
+    
+    // Concatenação dinâmica: http://localhost:3000 + /requisicoes + /123 + /encaminhar-diretoria
+    const url = `${apiUrl}${reqBase}/${id}/encaminhar-diretoria`;
 
-      if (!resposta.ok) {
-        const dadosErro = await resposta.json();
-        throw new Error(dadosErro.erro || 'Erro ao encaminhar requisição.');
-      }
+    const resposta = await fetch(url, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json', 
+        'Authorization': `Bearer ${contexto?.token}` 
+      },
+      body: JSON.stringify({ dadosRH })
+    });
 
-      alert('Dados preenchidos e encaminhados para a Diretoria com sucesso!');
-      navigate('/rh'); // Devolve o RH para a caixa de entrada
-    } catch (err: any) {
-      setErro(err.message);
-    } finally {
-      setCarregando(false);
+    if (!resposta.ok) {
+      const dadosErro = await resposta.json();
+      throw new Error(dadosErro.erro || 'Erro ao encaminhar requisição.');
     }
-  };
+
+    alert('Dados preenchidos e encaminhados para a Diretoria com sucesso!');
+    navigate(import.meta.env.VITE_LOGIN_RH);
+  } catch (err: any) {
+    setErro(err.message);
+  } finally {
+    setCarregando(false);
+  }
+};
 
   const inputClass = "w-full border border-gray-300 rounded-lg px-4 py-2 mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none";
   const labelClass = "block text-sm font-semibold text-gray-700";

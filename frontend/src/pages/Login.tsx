@@ -18,7 +18,7 @@ export default function Login() {
 
     try {
       // API chamada dinamicamente pelo padrão ${} do .env
-      const url = `${import.meta.env.VITE_API_URL}/api/auth/login`;
+      const url = `${import.meta.env.VITE_API_URL}${import.meta.env.VITE_LOGIN}`;
       const resposta = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

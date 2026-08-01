@@ -23,7 +23,7 @@ export default function PainelGerente() {
   useEffect(() => {
     const buscarRequisicoes = async () => {
       try {
-        const resposta = await fetch(`${apiUrl}/api/requisicoes/minhas`, {
+        const resposta = await fetch(`${apiUrl}${import.meta.env.VITE_API_REQ_MINHAS}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${contexto?.token}`,

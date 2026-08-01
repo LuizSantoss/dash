@@ -27,38 +27,42 @@ export default function PainelDiretoria() {
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-    const carregarDados = async () => {
-      try {
-        const config = { headers: { 'Authorization': `Bearer ${contexto?.token}` } };
-        const [resPendentes, resHistorico] = await Promise.all([
-          fetch(`${apiUrl}/api/requisicoes/diretoria`, config),
-          fetch(`${apiUrl}/api/requisicoes/diretoria/historico`, config)
-        ]);
+  const carregarDados = async () => {
+    try {
+      const config = { headers: { 'Authorization': `Bearer ${contexto?.token}` } };
+      
+      const urlPendentes = `${apiUrl}${import.meta.env.VITE_API_REQ_DIRETORIA}`;
+      const urlHistorico = `${apiUrl}${import.meta.env.VITE_API_REQ_DIRETORIA_HISTORICO}`;
 
-        if (!resPendentes.ok || !resHistorico.ok) throw new Error('Falha ao carregar os dados.');
-        const dadosPendentes = await resPendentes.json();
-        const dadosHistorico = await resHistorico.json();
+      const [resPendentes, resHistorico] = await Promise.all([
+        fetch(urlPendentes, config),
+        fetch(urlHistorico, config)
+      ]);
 
-        setRequisicoes(dadosPendentes);
-        setHistorico(dadosHistorico);
-      } catch (err: any) {
-        setErro(err.message);
-      } finally {
-        setCarregando(false);
-      }
-    };
+      if (!resPendentes.ok || !resHistorico.ok) throw new Error('Falha ao carregar os dados.');
+      const dadosPendentes = await resPendentes.json();
+      const dadosHistorico = await resHistorico.json();
 
-    if (contexto?.token) carregarDados();
+      setRequisicoes(dadosPendentes);
+      setHistorico(dadosHistorico);
+    } catch (err: any) {
+      setErro(err.message);
+    } finally {
+      setCarregando(false);
+    }
+  };
 
-    const socket = io(apiUrl);
-    socket.on('status_atualizado', (reqAtualizada: Requisicao) => {
-      if (reqAtualizada.status === 'Aguardando Diretoria') {
-        setRequisicoes(prev => [reqAtualizada, ...prev.filter(r => r.id !== reqAtualizada.id)]);
-      } else if (reqAtualizada.status === 'Aprovada' || reqAtualizada.status === 'Recusada') {
-        setRequisicoes(prev => prev.filter(r => r.id !== reqAtualizada.id));
-        setHistorico(prev => [reqAtualizada, ...prev.filter(r => r.id !== reqAtualizada.id)]);
-      }
-    });
+  if (contexto?.token) carregarDados();
+
+  const socket = io(apiUrl);
+  socket.on('status_atualizado', (reqAtualizada: Requisicao) => {
+    if (reqAtualizada.status === 'Aguardando Diretoria') {
+      setRequisicoes(prev => [reqAtualizada, ...prev.filter(r => r.id !== reqAtualizada.id)]);
+    } else if (reqAtualizada.status === 'Aprovada' || reqAtualizada.status === 'Recusada') {
+      setRequisicoes(prev => prev.filter(r => r.id !== reqAtualizada.id));
+      setHistorico(prev => [reqAtualizada, ...prev.filter(r => r.id !== reqAtualizada.id)]);
+    }
+  });
 
     return () => {
       socket.off('status_atualizado');
@@ -71,7 +75,10 @@ export default function PainelDiretoria() {
     setProcessando(true);
 
     try {
-      const resposta = await fetch(`${apiUrl}/api/requisicoes/${requisicaoSelecionada.id}/avaliar`, {
+      const reqBase = import.meta.env.VITE_API_REQ_BASE;
+      const url = `${apiUrl}${reqBase}/${requisicaoSelecionada.id}/avaliar`;
+
+      const resposta = await fetch(url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

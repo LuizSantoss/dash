@@ -1,30 +1,29 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { createServer } from 'http'; // <-- Importação nativa do Node
-import { initSocket } from './services/socket.service.ts'; // <-- O nosso novo serviço
+import { createServer } from 'http';
+import { initSocket } from './services/socket.service.ts';
 import authRoutes from './routes/auth.routes.ts';
 import requisicaoRoutes from './routes/requisicao.routes.ts';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const server = createServer(app);
 
-// 1. Criamos o servidor HTTP unindo-o ao Express
-const httpServer = createServer(app);
-
-// 2. Iniciamos o Socket.io usando esse servidor HTTP
-initSocket(httpServer);
-
+// Middlewares globais
 app.use(cors());
 app.use(express.json());
 
-// Rotas
-app.use('/api/auth', authRoutes);
-app.use('/api/requisicoes', requisicaoRoutes);
+// 1. Inicializa os WebSockets no servidor HTTP
+initSocket(server);
 
-// Usamos 'httpServer.listen' em vez do 'app.listen'
-httpServer.listen(PORT, () => {
-    console.log(`Servidor dash RH rodando na porta ${PORT} com WebSockets ATIVOS 🚀`);
+// 2. Rotas limpas SEM o prefixo /api (Opção 2)
+app.use('/auth', authRoutes);
+app.use('/requisicoes', requisicaoRoutes);
+
+const PORT = process.env.PORT || 3000;
+
+server.listen(PORT, () => {
+  console.log(`Servidor dash RH rodando na porta ${PORT}`);
 });
