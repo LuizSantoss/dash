@@ -37,7 +37,7 @@ const handleSubmit = async (e: FormEvent) => {
     const apiUrl = import.meta.env.VITE_API_URL;
     const reqBase = import.meta.env.VITE_API_REQ_BASE;
     
-    // Concatenação dinâmica: http://localhost:3000 + /requisicoes + /123 + /encaminhar-diretoria
+    // Concatenação http://localhost:3000 + /requisicoes + /123 + /encaminhar-diretoria
     const url = `${apiUrl}${reqBase}/${id}/encaminhar-diretoria`;
 
     const resposta = await fetch(url, {
