@@ -7,6 +7,7 @@ import NovaRequisicao from './pages/novaRequisicao.tsx';
 import PainelRH from './pages/painelRH';
 import AnaliseRH from './pages/analiseRH.tsx';
 import PainelDiretoria from './pages/painelDiretoria';
+import PainelAdm from './pages/painelAdm.tsx';
 
 function App() {
   return (
@@ -55,6 +56,16 @@ function App() {
             element={
               <PrivateRoute perfisPermitidos={['DIRETORIA']}>
                 <PainelDiretoria/>
+              </PrivateRoute>
+            } 
+          />
+
+          {/* Rota Protegida da Diretoria */}
+          <Route 
+            path="/admin" 
+            element={
+              <PrivateRoute perfisPermitidos={['ADM']}>
+                <PainelAdm/>
               </PrivateRoute>
             } 
           />
