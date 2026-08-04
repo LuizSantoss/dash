@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import  { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -22,7 +22,7 @@ async function main() {
   // 2. CRIAÇÃO DE USUÁRIOS (PERFIS DO SISTEMA)
 
   // Administrador (ADM) - Visualiza tudo e altera senhas
-    const adm = await prisma.usuario.create({
+  const adm = await prisma.usuario.create({
     data: {
       nome: 'Administrador Geral',
       email: 'admin@tuaempresa.com',

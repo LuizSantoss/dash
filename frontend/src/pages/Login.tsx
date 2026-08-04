@@ -32,12 +32,25 @@ export default function Login() {
 
       contexto?.login(dados.token);
 
-      // Redirecionamento por perfil
-      if (dados.usuario.perfil === 'GERENTE') navigate('/gerente');
-      else if (dados.usuario.perfil === 'RH') navigate('/rh');
-      else if (dados.usuario.perfil === 'DIRETORIA') navigate('/diretoria');
-      else if (dados.usuario.perfil === 'ADM') navigate('/adm'); // Suporte ao novo ADM
-      else navigate('/');
+    // 3. Sucesso! Guardamos o token na memória (AuthContext)
+    contexto?.login(dados.token);
+
+    // 4. A Rota Inteligente: redireciona com base no perfil e variáveis do .env
+    const perfil = dados.usuario.perfil;
+
+    if (perfil === 'GERENTE') {
+      navigate(import.meta.env.VITE_LOGIN_GERENTE || '/gerente');
+    } else if (perfil === 'RH') {
+      navigate(import.meta.env.VITE_LOGIN_RH || '/rh');
+    } else if (perfil === 'DIRETORIA') {
+      navigate(import.meta.env.VITE_LOGIN_DIRETORIA || '/diretoria');
+    } else if (perfil === 'ADM') {
+      // ATENÇÃO: Adicionada a verificação explícita do ADM
+      navigate(import.meta.env.VITE_LOGIN_ADM || '/admin');
+    } else {
+      navigate('/login');
+    }
+    
     } catch (error: any) {
       setErro(error.message);
     } finally {

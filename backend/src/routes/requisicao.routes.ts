@@ -7,22 +7,23 @@ import {
     listarRequisicoesDiretoria,
     avaliarRequisicao,
     listarHistoricoDiretoria,
-    listarTodasRequisicoesADM // <-- Função importada do ADM
+    listarTodasRequisicoesADM
 } from "../controllers/requisicao.controller.ts";
 import { verificarToken } from "../middleware/auth.middleware.ts";
+import { ROTAS } from "../config/rotas.ts";
 
 const router = Router();
 
 // Rotas de consulta (GET)
-router.get('/minhas', verificarToken, listarMinhasRequisicoes);
-router.get('/rh', verificarToken, listarRequisicoesRH);
-router.get('/diretoria', verificarToken, listarRequisicoesDiretoria); 
-router.get('/diretoria/historico', verificarToken, listarHistoricoDiretoria);
-router.get('/adm/todas', verificarToken, listarTodasRequisicoesADM); // <-- Nova rota do ADM
+router.get(ROTAS.REQUISICOES.MINHAS, verificarToken, listarMinhasRequisicoes);
+router.get(ROTAS.REQUISICOES.RH, verificarToken, listarRequisicoesRH);
+router.get(ROTAS.REQUISICOES.DIRETORIA, verificarToken, listarRequisicoesDiretoria); 
+router.get(ROTAS.REQUISICOES.DIRETORIA_HISTORICO, verificarToken, listarHistoricoDiretoria);
+router.get(ROTAS.REQUISICOES.ADM_TODAS, verificarToken, listarTodasRequisicoesADM);
 
 // Rotas de criação e atualização (POST / PUT)
-router.post('/', verificarToken, criarRequisicao);
-router.put('/:id/encaminhar-diretoria', verificarToken, encaminharDiretoria);
-router.put('/:id/avaliar', verificarToken, avaliarRequisicao); 
+router.post(ROTAS.REQUISICOES.CRIAR, verificarToken, criarRequisicao);
+router.put(ROTAS.REQUISICOES.ENCAMINHAR_DIRETORIA, verificarToken, encaminharDiretoria);
+router.put(ROTAS.REQUISICOES.AVALIAR, verificarToken, avaliarRequisicao); 
 
 export default router;

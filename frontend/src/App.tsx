@@ -62,10 +62,10 @@ function App() {
 
           {/* Rota Protegida da Diretoria */}
           <Route 
-            path="/admin" 
+            path={import.meta.env.VITE_LOGIN_ADM || "/admin"} 
             element={
               <PrivateRoute perfisPermitidos={['ADM']}>
-                <PainelAdm/>
+                <PainelAdm />
               </PrivateRoute>
             } 
           />

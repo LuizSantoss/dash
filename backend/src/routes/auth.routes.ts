@@ -1,15 +1,16 @@
 import { Router } from "express";
 import { registrar, login, listarUsuarios, alterarSenhaUsuario } from '../controllers/auth.controller.ts';
 import { verificarToken } from "../middleware/auth.middleware.ts";
+import { ROTAS } from "../config/rotas.ts";
 
 const router = Router();
 
 // Rotas públicas (Abertas)
-router.post('/registrar', registrar);
-router.post('/login', login);
+router.post(ROTAS.AUTH.REGISTRAR, registrar);
+router.post(ROTAS.AUTH.LOGIN, login);
 
-// Rotas protegidas (Exclusivas do ADM - a barreira de perfil está no controller)
-router.get('/usuarios', verificarToken, listarUsuarios);
-router.put('/usuarios/alterar-senha', verificarToken, alterarSenhaUsuario);
+// Rotas protegidas (Exclusivas do ADM )
+router.get(ROTAS.AUTH.USUARIOS, verificarToken, listarUsuarios);
+router.put(ROTAS.AUTH.ALTERAR_SENHA, verificarToken, alterarSenhaUsuario);
 
 export default router;
